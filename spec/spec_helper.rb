@@ -9,4 +9,6 @@ spec_dir = File.dirname(__FILE__)
 $LOAD_PATH.unshift spec_dir
 
 RSpec.configure do |config|
+    config.default_formatter = 'doc'
+  config.order = :random
 end
