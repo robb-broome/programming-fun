@@ -1,30 +1,24 @@
 require_relative '../common'
+class IllegalListOp < StandardError; end;
 
 class LinkedList
   attr_reader :head
   attr_accessor :last
-  def initialize head
+  def initialize head:
     @head = head
     @last = head
   end
 
   def << new_node
-    last_node = last
-    last_node.next = new_node
-
-    binding.pry
-    last = new_node
+    self.last.next = new_node
+    self.last = new_node
   end
 
   def remove_node node
-    return nil if node == last
-    next_node = node.next
-    after_next = next_node.next
-    node.data = next_node.data
-    node.next = after_next
+    fail IllegalListOp.new("Can't remove last node") if node == last
+    node.data = node.next.data
+    node.next = node.next.next
   end
-
-
 end
 
 class Node
