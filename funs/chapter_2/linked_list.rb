@@ -19,6 +19,21 @@ class LinkedList
     node.data = node.next.data
     node.next = node.next.next
   end
+
+  def size
+    [self.head].tap do |a|
+      loop do
+        break a if (n = a[-1].next).nil?
+        a << n
+      end
+    end.size
+  end
+
+  def remove_kth_to_last place
+    size = self.size
+    nexts = [:next] * place
+    remove_node(nexts.inject(head) {|me, cmd| me.send(cmd)})
+  end
 end
 
 class Node
@@ -26,6 +41,10 @@ class Node
   def initialize data: nil
     @data = data
     @next = nil
+  end
+
+  def ==(other)
+    self.data == other.data
   end
 end
 
