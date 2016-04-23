@@ -2,7 +2,9 @@ require_relative '../common'
 
 class String
   def unshift
-    self[0]
+    val = self[0]
+    replace self[1..-1]
+    val
   end
 
   def rotate(num)
@@ -18,20 +20,29 @@ class String
     end
     false
   end
+
+  def unique?
+    pos = -1
+    loop do
+      break unless char = self[pos += 1]
+      check = pos
+      loop do
+        break unless check_char = self[check += 1]
+        return false if char == check_char
+      end
+    end
+    true
+  end
+
+  def permutation_of? other
+    self.to_a.sort == other.to_a.sort
+  end
+
+  def to_a
+    self.split //
+  end
 end
 
-def unique? str
-  pos = -1
-  loop do
-    break unless char = str[pos += 1]
-    check = pos
-    loop do
-      break unless check_char = str[check += 1]
-      return false if char == check_char
-    end
-  end
-  true
-end
 
 class Matrix
   require 'pry'

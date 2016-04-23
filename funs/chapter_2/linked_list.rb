@@ -18,6 +18,7 @@ class LinkedList
     fail IllegalListOp.new("Can't remove last node") if node == last
     node.data = node.next.data
     node.next = node.next.next
+    # TODO: handle any node.
   end
 
   def size
@@ -32,7 +33,26 @@ class LinkedList
   def remove_kth_to_last place
     size = self.size
     nexts = [:next] * place
-    remove_node(nexts.inject(head) {|me, cmd| me.send(cmd)})
+    remove_node(nexts.inject(head) {|node, cmd| node.send(cmd)})
+  end
+
+  def remove_last
+  end
+
+  def rm_dupes
+    node = head
+    known_elements = [node.data]
+    loop do
+      break unless node = node.next
+      if known_elements.include? node.data
+        self.remove_node(node)
+      else
+        known_elements << node.data
+      end
+    end
+  end
+
+  def rm_dupes_no_buffer
   end
 end
 

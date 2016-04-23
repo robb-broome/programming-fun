@@ -73,4 +73,28 @@ RSpec.describe LinkedList do
       expect(list.head.next.next).to eq(last)
     end
   end
+
+  describe 'remove dups without buffer' do
+    let(:list) { create_list node_count: 4 }
+    let(:to_dup) {list.head.next.data}
+    before do
+      list << Node.new(data: to_dup)
+    end
+
+    it 'removes dup entries' do
+      expect{ list.rm_dupes_no_buffer }.to change{ list.size }.by(-1)
+    end
+  end
+
+  describe 'remove dups' do
+    let(:list) { create_list node_count: 4 }
+    let(:to_dup) {list.head.next.data}
+    before do
+      list << Node.new(data: to_dup)
+    end
+
+    it 'removes dup entries' do
+      expect{ list.rm_dupes }.to change{ list.size }.by(-1)
+    end
+  end
 end
