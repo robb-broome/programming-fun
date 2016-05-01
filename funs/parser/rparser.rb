@@ -15,12 +15,13 @@ class BaseNode
     @chunk = chunk
   end
 
-  def partition str
-    wrt "PARTITIONING using #{partition_char}"
+  def partition str, by: nil
+    by ||= partition_char
+    wrt "PARTITIONING using #{by}"
     return str unless partition_char
-    reg = /([^#{partition_char}]+)#{partition_char}(.+)/
+    reg = /([^#{by}]+)#{by}(.+)/
     match = str.match reg
-    [match[1],match[2]]
+    [match[1].strip, match[2].strip]
   end
 
   def value
@@ -55,17 +56,17 @@ class HashNode < BaseNode
 
   def parse
     super
+    # grab the first 'word' (delimited by quote)
+    # then grab the next thing: either ',' or ':'
+    first_word = chunk.match(/"(\w+)"/)[1]
+
     # break by commas first, then iterate
     # but this doesn't work if the comma is in a sub-element.
-    chunks = chunk.include?(',') ? partition(chunk, char: ',') : [chunk]
-    wrt "SPLIT BY COMMA gets #{chunks.inspect}"
-    chunks.each do |chunk|
-      wrt "PARSING #{chunk}"
-      partn = partition(chunk)
-      wrt "PARTITIONED TO: #{partn}"
-      val << [ RParser.parse(partn[0]), RParser.parse(partn[1]) ]
-      wrt "VAL IS NOW #{val}"
-    end
+    # Get the first key.
+    parts = partition(chunk, by: ':')
+    wrt "PARTITION got #{parts.inspect}"
+    val << [ RParser.parse(parts[0]), RParser.parse(parts[1]) ]
+
     self
   end
 end
@@ -103,6 +104,8 @@ class LeafNode < BaseNode
     super
     match = chunk.match(/["']?([^"]+)["']?/)
     value = match[1]
+    return value.to_i if value =~ /^\d+$/
+    value
 
   end
 end
@@ -204,9 +207,16 @@ end
 
 
 RSpec.describe RParser do
- it 'parses a simple string' do
-   ast = RParser.parse('{"name": "Robb"}')
-   expect(ast.value).to eq({'name' => 'Robb'})
+ # it 'parses a simple string' do
+ #   ast = RParser.parse('{"name": "Robb"}')
+ #   expect(ast.value).to eq({'name' => 'Robb'})
+ #  end
+ #  it 'parses a hash with two keys' do
+ #    test = '{"name": "Robb", "age": 45}'
+ #    expect(RParser.parse(test).value).to eq({'name' => 'Robb', 'age' => 45})
+ #  end
+  it 'parses a nested hash' do
+    test = '{"person": {"name": "Robb", "age": 45}}'
+    expect(RParser.parse(test).value).to eq({'person' => {'name' => 'Robb', 'age' => 45}})
   end
 end
-
