@@ -58,14 +58,18 @@ class HashNode < BaseNode
     super
     # grab the first 'word' (delimited by quote)
     # then grab the next thing: either ',' or ':'
-    first_word = chunk.match(/"(\w+)"/)[1]
+    matches =  chunk.match(/"(\w+)":(.+)/)[2]
+    first_word = matches[1]
+    first_value = matches[2]
 
+    # is the first element a k,v and are there potentially more?
+    #     - pattern wwww: wwwww, wwww: wwww, ...
+    #     - other pattern wwww: {
+    #     - or            wwww: [
     # break by commas first, then iterate
     # but this doesn't work if the comma is in a sub-element.
     # Get the first key.
-    parts = partition(chunk, by: ':')
-    wrt "PARTITION got #{parts.inspect}"
-    val << [ RParser.parse(parts[0]), RParser.parse(parts[1]) ]
+    val << [ RParser.parse(first_word), RParser.parse(first_value) ]
 
     self
   end
