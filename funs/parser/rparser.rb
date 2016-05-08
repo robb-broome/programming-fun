@@ -61,6 +61,7 @@ class HashNode < BaseNode
     matches =  chunk.match(/"(\w+)":(.+)/)[2]
     first_word = matches[1]
     first_value = matches[2]
+    puts "MATCHES #{first_word} #{first_value}"
 
     # is the first element a k,v and are there potentially more?
     #     - pattern wwww: wwwww, wwww: wwww, ...
