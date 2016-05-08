@@ -1,5 +1,41 @@
 require 'rspec'
 require 'pry'
+class Q
+  attr_accessor :els
+  def initialize els
+    @els = els
+  end
+end
+class BFS
+  class << self
+    def search root, val=nil
+      if root.right
+        return root.right if root.right && root.right.value == val
+        q.push root.rig
+      end
+      if root.left
+        return root.left if root.left && root.left.value == val
+        q.push root.left
+      end
+
+     BFS.search(root.right)
+     BFS.search(root.left)
+
+    end
+  end
+end
+
+RSpec.describe BFS do
+  let(:root) { MinHeap.build([3, 1, 2, 5, 6, 7, 9]).fix }
+  it 'searches' do
+    expect{BFS.search(root)}.not_to raise_error(StandardError)
+  end
+
+  it 'finds' do
+    expect(BFS.search(root, 9)).to eq Node.new(9)
+  end
+end
+
 class MinHeap
   attr_accessor :root
 
@@ -20,8 +56,6 @@ class MinHeap
       @root
     end
   end
-
-
 end
 
 class Node
@@ -66,7 +100,7 @@ end
 
 RSpec.describe MinHeap do
   it 'makes a tree' do
-    expect(MinHeap.new([1,4,8,12,16])).to be_a(MinHeap)
+    expect(MinHeap.build([1,4,8,12,16])).to be_a(Node)
   end
 
   describe 'fixes a node' do
