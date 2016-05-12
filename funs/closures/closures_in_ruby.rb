@@ -1,3 +1,40 @@
+# README
+# The base for this file is copied from
+# https://innig.net/software/ruby/closures-in-ruby
+# and is used here as a basis for practice.
+#
+# CLOSURES IN RUBY     Paul Cantrell    https://innig.net
+# Email: username "cantrell", domain name "pobox.com"
+ 
+# I recommend executing this file, then reading it alongside its output.
+#
+# Alteratively, you can give yourself a sort of Ruby test by deleting all the comments,
+# then trying to guess the output of the code!
+ 
+# A closure is a block of code which meets three criteria:
+# 
+#     * It can be passed around as a value and
+# 
+#     * executed on demand by anyone who has that value, at which time
+# 
+#     * it can refer to variables from the context in which it was created
+#       (i.e. it is closed with respect to variable access, in the
+#       mathematical sense of the word "closed").
+#
+# (The word "closure" actually has an imprecise meaning, and some people don't
+# think that criterion #1 is part of the definition. I think it is.)
+# 
+# Closures are a mainstay of functional languages, but are present in many other
+# languages as well (e.g. Java's anonymous inner classes). You can do cool stuff
+# with them: they allow deferred execution, and some elegant tricks of style.
+# 
+# Ruby is based on the "principle of least surprise," but I had a really nasty
+# surprise in my learning process. When I understood what methods like "each"
+# were doing, I thought, "Aha! Ruby has closures!" But then I found out that a
+# function can't accept multiple blocks -- violating the principle that closures
+# can be passed around freely as values.
+# 
+# This document details what I learned in my quest to figure out what the deal is.
 def example num
   puts
   puts "------ Example #{num} ------"
