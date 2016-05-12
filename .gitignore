@@ -1,0 +1,11 @@
+.DS_Store
+*~
+*.swp
+
+# ignore saved vim sessions
+*.vim
+
+erd.pdf
+tags
+:w
+
