@@ -12,19 +12,20 @@ class Roman
     ]
   class << self
     def roman_for number
-      prev_place = ''
       ''.tap do |result|
-        PLACES.each do |rule|
+        PLACES.each_with_index do |rule, index|
           current_tens, current_place = rule
           val, number = number.divmod(current_tens)
           puts "#{current_tens}, #{val}, #{number}"
-          romans = current_place * val
-          if romans.length == 4
-            romans = current_place + prev_place
+          next if val == 0
+          if val >= 4
+            result << current_place + PLACES[index-1][1]
+          elsif val > 0
+            result << current_place * val
           end
-          prev_place = current_place
-          result << romans
+          break
         end
+        return result << Roman.roman_for(number)
       end
     end
   end
