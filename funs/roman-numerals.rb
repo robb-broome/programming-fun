@@ -1,4 +1,5 @@
 require 'rspec'
+# require_relative 'number_order/numeric-decomposition'
 
 class Roman
     PLACES = [
@@ -12,11 +13,12 @@ class Roman
     ]
   class << self
     def roman_for number
+      return '' if number == 0
       ''.tap do |result|
         PLACES.each_with_index do |rule, index|
           current_tens, current_place = rule
           val, number = number.divmod(current_tens)
-          puts "#{current_tens}, #{val}, #{number}"
+          puts "for #{number}: rule:#{rule}, #{val}, #{number}"
           next if val == 0
           if val >= 4
             result << current_place + PLACES[index-1][1]
@@ -30,8 +32,8 @@ class Roman
     end
   end
 end
-RSpec.describe Roman do
 
+RSpec.describe Roman do
   describe 'roman_for' do
     it 'turns 4 into IV' do
       expect(Roman.roman_for 4).to eq 'IV'
