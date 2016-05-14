@@ -5,6 +5,8 @@
 # ignore saved vim sessions
 *.vim
 
+.bundle
+
 erd.pdf
 tags
 :w
