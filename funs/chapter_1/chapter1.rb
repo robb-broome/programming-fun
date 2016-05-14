@@ -104,7 +104,24 @@ class Matrix
   end
 end
 
-require 'spec_helper'
+require 'rspec'
+
+RSpec.describe Matrix do
+  it 'retuns a Matrix' do
+    expect(Matrix.new(rows: 1,columns: 1)).to be_a Matrix
+  end
+
+  context 'a Matrix' do
+    let(:default_value) { 'x' }
+    let(:matrix) { Matrix.new rows: 3, columns: 3, default: default_value }
+
+    it 'is addressable by r: c: ' do
+      expect(matrix[2,2]).to eq default_value
+    end
+
+  end
+end
+
 
 RSpec.describe String do
   it 'sorts' do

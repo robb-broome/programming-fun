@@ -90,7 +90,7 @@ def fast a, b
   shared
 end
 
-require 'spec_helper'
+require 'rspec'
 
 RSpec.describe 'array_comparator' do
   describe 'builds arrays' do
