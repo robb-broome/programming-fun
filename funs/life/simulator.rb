@@ -1,9 +1,25 @@
 require 'pry'
+GRID_ROWS = 60
+GRID_COLS = 100
+DELAY = 0.001
+LIFETIME = 1000000
 class Field
   KILL_VAL = 5
-  SPAWN_VAL = 3
+  P_KILL = 0.01
+
+  SPAWN_VAL = 4
+  P_SPAWN = 0.001
+
+  RANDOMNESS = true
+  NEIGHBOR_RANGE = 1
+
 
   attr_reader :rows, :cols, :cells
+
+  @@iter_count = -1
+  @@magic_kills = 0
+  @@magic_births = 0
+
   def initialize rows, cols
     @rows = rows
     @cols = cols
@@ -19,7 +35,13 @@ class Field
   def advance
     cells.each do |addr, cell|
       count = neighbor_count_for(cell)
-      if count >= KILL_VAL
+      if RANDOMNESS && Kernel.rand > (1.00 - P_SPAWN)
+        @@magic_births += 1
+        cell.spawn
+      elsif RANDOMNESS && Kernel.rand > (1.00 - P_KILL)
+        @@magic_kills += 1
+        cell.kill
+      elsif count >= KILL_VAL
         cell.kill
       elsif count >= SPAWN_VAL
         cell.spawn
@@ -28,12 +50,16 @@ class Field
   end
 
   def print
+    val = "--#{@@iter_count += 1}-- magic kills:#{@@magic_kills} magic births: #{@@magic_births}\n"
     rows.times do |row|
       cols.times do |col|
-        STDOUT.print cells[[row,col]].to_s
+        item = cells[[row,col]].to_s
+        val << item
       end
-      puts
+      val << "|\n"
     end
+    val << '-' * GRID_ROWS
+    STDOUT.write val
   end
 
   def value_at cell_addr
@@ -44,11 +70,14 @@ class Field
 
   def neighbor_count_for cell
     val = 0
-    (-1..1).each do |x|
-      (-1..1).each do |y|
+    (-NEIGHBOR_RANGE..NEIGHBOR_RANGE).each do |x|
+      (-NEIGHBOR_RANGE..NEIGHBOR_RANGE).each do |y|
         next if x == 0 && y == 0
         row, col = cell.row + y, cell.col + x
-        val += value_at [row, col]
+        neighbor_value = value_at [row, col]
+        distance =[ x, y].max
+        # val += neighbor_value.to_f / distance.to_f
+        val += neighbor_value
       end
     end
     val
@@ -64,7 +93,7 @@ class Cell
   end
 
   def to_s
-    self.state == 1 ? 'x' : '.'
+    self.state == 1 ? 'x' : ' '
   end
 
   def spawn
@@ -81,14 +110,19 @@ class Cell
   end
 end
 
-field = Field.new 25,70
+field = Field.new GRID_ROWS, GRID_COLS
 field.cells[[20,50]].flip
 field.cells[[21,51]].flip
 field.cells[[21,50]].flip
 field.cells[[21,49]].flip
+field.cells[[21,48]].flip
+system 'clear'
 field.print
-binding.pry
-100.times do
-field.print
-field.advance
+sleep 1
+system 'clear'
+LIFETIME.times do
+  system 'clear'
+  field.print
+  sleep DELAY
+  field.advance
 end
