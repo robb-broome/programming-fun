@@ -5,9 +5,9 @@ var options = {
   promiseLib: promise
 };
 
-pw = process.env.DATABASE_PASSWORD
-user = process.env.DATABASE_USER
-database_name = process.env.DATABASE_NAME
+var pw = process.env.DATABASE_PASSWORD
+var user = process.env.DATABASE_USER
+var database_name = process.env.DATABASE_NAME
 
 var pgp = require('pg-promise')(options);
 var connection = {
