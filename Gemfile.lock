@@ -1,14 +1,20 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    byebug (8.2.4)
+    activesupport (5.0.1)
+      concurrent-ruby (~> 1.0, >= 1.0.2)
+      i18n (~> 0.7)
+      minitest (~> 5.1)
+      tzinfo (~> 1.1)
+    awesome_print (1.7.0)
     coderay (1.1.1)
+    concurrent-ruby (1.0.4)
     diff-lcs (1.2.5)
-    ffi (1.9.10)
+    ffi (1.9.14)
     formatador (0.2.5)
-    guard (2.13.0)
+    guard (2.14.0)
       formatador (>= 0.2.4)
-      listen (>= 2.7, <= 4.0)
+      listen (>= 2.7, < 4.0)
       lumberjack (~> 1.0)
       nenv (~> 0.1)
       notiffany (~> 0.0)
@@ -19,52 +25,65 @@ GEM
     guard-shell (0.7.1)
       guard (>= 2.0.0)
       guard-compat (~> 1.0)
-    listen (3.0.6)
-      rb-fsevent (>= 0.9.3)
-      rb-inotify (>= 0.9.7)
+    i18n (0.7.0)
+    interactive_editor (0.0.10)
+      spoon (>= 0.0.1)
+    listen (3.1.5)
+      rb-fsevent (~> 0.9, >= 0.9.4)
+      rb-inotify (~> 0.9, >= 0.9.7)
+      ruby_dep (~> 1.2)
     lumberjack (1.0.10)
     method_source (0.8.2)
+    minitest (5.8.5)
     nenv (0.3.0)
-    notiffany (0.0.8)
+    notiffany (0.1.1)
       nenv (~> 0.1)
       shellany (~> 0.0)
-    pry (0.10.3)
+    pry (0.10.4)
       coderay (~> 1.1.0)
       method_source (~> 0.8.1)
       slop (~> 3.4)
-    pry-byebug (3.3.0)
-      byebug (~> 8.0)
-      pry (~> 0.10)
-    rb-fsevent (0.9.7)
+    rb-fsevent (0.9.8)
     rb-inotify (0.9.7)
       ffi (>= 0.5.0)
-    rspec (3.4.0)
-      rspec-core (~> 3.4.0)
-      rspec-expectations (~> 3.4.0)
-      rspec-mocks (~> 3.4.0)
-    rspec-core (3.4.4)
-      rspec-support (~> 3.4.0)
-    rspec-expectations (3.4.0)
+    rspec (3.5.0)
+      rspec-core (~> 3.5.0)
+      rspec-expectations (~> 3.5.0)
+      rspec-mocks (~> 3.5.0)
+    rspec-core (3.5.4)
+      rspec-support (~> 3.5.0)
+    rspec-expectations (3.5.0)
       diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.4.0)
-    rspec-mocks (3.4.1)
+      rspec-support (~> 3.5.0)
+    rspec-mocks (3.5.0)
       diff-lcs (>= 1.2.0, < 2.0)
-      rspec-support (~> 3.4.0)
-    rspec-support (3.4.1)
+      rspec-support (~> 3.5.0)
+    rspec-support (3.5.0)
+    ruby_dep (1.5.0)
     shellany (0.0.1)
     slop (3.6.0)
-    thor (0.19.1)
+    spoon (0.0.6)
+      ffi
+    thor (0.19.4)
+    thread_safe (0.3.5)
+    tzinfo (1.2.2)
+      thread_safe (~> 0.1)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
+  activesupport
+  awesome_print
   guard
   guard-shell
+  interactive_editor
   pry
-  pry-byebug
   rb-fsevent (~> 0.9)
   rspec
 
+RUBY VERSION
+   ruby 2.3.3p222
+
 BUNDLED WITH
-   1.11.2
+   1.13.7
