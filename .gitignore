@@ -11,3 +11,4 @@ erd.pdf
 tags
 :w
 .env
+*.log
