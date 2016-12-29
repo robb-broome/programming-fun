@@ -1,11 +1,68 @@
 require 'rspec'
 require 'pry'
-class Freq
+
+class Encryptor
+  ALPHABET = ('a'..'z').to_a
+  A = ALPHABET[0].sum
+  Z = ALPHABET[-1].sum
+  BASE = A - 1
+  ALPHABET_SIZE = ALPHABET.count
+
+
+  DEFAULT_SHIFT = 1
+  ENCODING = 'US-ASCII'
+  attr_accessor :text
+
+  def initialize(text)
+    @text=text.downcase
+  end
+
+  def shift_text(shift_by)
+    text.split('').map {|letter| shift(letter, shift_by) }.join
+  end
+
+  def shift(letter, shift_by)
+    # TODO: handle punctuation. Maybe delete?
+    return letter unless letter.sum.between?(A,Z)
+    to_char(shifted_position(letter, shift_by) + BASE)
+  end
+
+  def position(letter)
+    letter.sum % BASE
+  end
+
+  def shifted_position(letter, shift_by)
+    shifted_position = (position(letter) + shift_by) % ALPHABET_SIZE
+    shifted_position == 0 ? ALPHABET_SIZE : shifted_position
+  end
+
+  def to_char( code )
+    code.chr ENCODING
+  end
+
+  def text_a
+    @text_a ||= to_a(text)
+  end
+
+  def to_a( tmp_text )
+    tmp_text.split('').select{|letter| !letter.nil? && letter != ''}
+  end
+end
+
+class MexicanArmy < Encryptor
+  # 
+end
+
+RSpec.describe MexicanArmy do
+end
+
+class Freq < Encryptor
+  # frequency analysis on text
 
   attr_reader :text, :frequency, :count
 
   def initialize text
-    @text = text.downcase
+    super
     @frequency = Hash.new {|h, k| h[k] = 0 }
     @count = Hash.new {|h, k| h[k] = 0 }
     digest
@@ -39,7 +96,6 @@ class Freq
     doubles.sort{|a, b| a[1] <=> b[1]}.reverse
   end
 
-
   def digest
     text_a.each do |letter|
       next if letter.nil? || letter == ''
@@ -48,12 +104,13 @@ class Freq
   end
 
   def text_a
-    @text_a ||= text.split('').select{|letter| !letter.nil? && letter != ''}
+    @text_a ||= to_a(text)
   end
+
 end
 
 RSpec.describe Freq do
-  let(:decyphered_huck) { File.read 'funs/encryption/texts/huckleberry_finn.txt' }
+  let(:deciphered_huck) { File.read 'funs/encryption/texts/huckleberry_finn.txt' }
   it 'gives the freqency' do
     text = 'aabcd'
     freq = Freq.new(text)
@@ -61,118 +118,161 @@ RSpec.describe Freq do
   end
 
   it 'does twain' do
-    pp Freq.new(decyphered_huck).count
+    pp Freq.new(deciphered_huck).count
   end
 
   it'results' do
-    pp Freq.new(decyphered_huck).result
+    pp Freq.new(deciphered_huck).result
   end
 
   it'doubles' do
-    pp Freq.new(decyphered_huck).doubles
+    pp Freq.new(deciphered_huck).doubles
   end
 end
 
-class Caesar
-  A = 'a'.sum
-  Z = 'z'.sum
-  BASE = A - 1
-  ALPHABET_SIZE = (Z - BASE)
-
-  DEFAULT_SHIFT = 1
-  ENCODING = 'US-ASCII'
-
-  attr_accessor :text
-
-  def initialize(text)
-    @text=text.downcase
-  end
-
-  def multiple_cypher(times, shift_by= DEFAULT_SHIFT)
+class Caesar < Encryptor
+  def multiple_cipher(times, shift_by= DEFAULT_SHIFT)
     times.times do |n|
-      puts text
       self.text  = shift_text(shift_by)
     end
     text
   end
 
-  def encypher(shift_by = DEFAULT_SHIFT)
+  def encipher(shift_by = DEFAULT_SHIFT)
     shift_text(shift_by)
   end
 
-  def decypher(shift_by = DEFAULT_SHIFT)
+  def decipher(shift_by = DEFAULT_SHIFT)
     shift_text(shift_by * -1)
-  end
-
-  def shift(letter, shift_by)
-    # do not handle punctuation for now
-    return letter unless letter.sum.between?(A,Z)
-    to_char(shifted_position(letter, shift_by) + BASE)
-  end
-
-  def shift_text(shift_by)
-    text.split('').map {|letter| shift(letter, shift_by) }.join
-  end
-
-  def position(letter)
-    letter.sum % BASE
-  end
-
-  def shifted_position(letter, shift_by)
-    shifted_position = (position(letter) + shift_by) % ALPHABET_SIZE
-    shifted_position == 0 ? ALPHABET_SIZE : shifted_position
-  end
-
-  def to_char( code )
-    code.chr ENCODING
-  end
-
-  def text_a
-    @text_a ||= text.split('').select{|letter| !letter.nil? && letter != ''}
   end
 
 end
 
-RSpec.describe Caesar do
-  let(:encryptor) { Caesar.new(subject_text) }
+class Vigenere < Caesar
 
-  let(:no_wrap_text) { 'abcde' }
-  let(:no_wrap_cypher) { 'bcdef' }
+  attr_accessor :key
 
-  let(:wrap_text) { 'wxyz' }
-  let(:wrap_cypher) { 'xyza' }
-
-  let(:decyphered_huck) { File.open 'funs/encryption/texts/huckleberry_finn.txt' }
-
-  after do
-    close decyphered_huck rescue nil
+  def initialize text, key
+    super(text)
+    @key = key
   end
 
-  context 'multiple cypher' do
+  def encipher
+    key_position = 0
+    text_a.map do |letter|
+      if letter.sum.between?(A,Z)
+        shift_value = key_shifts[key_position]
+        key_position = (key_position + 1) % key_length
+        shift(letter, shift_value)
+      else
+        letter
+      end
+    end.join
+  end
+
+  def decipher
+    key_position = 0
+    text_a.map do |letter|
+      if letter.sum.between?(A,Z)
+        shift_value = key_shifts[key_position]
+        key_position = (key_position + 1) % key_length
+        key_row_letter_position = (position(letter) - 1) - shift_value
+        ALPHABET[key_row_letter_position]
+      else
+        letter
+      end
+    end.join
+  end
+
+  private
+
+  def key_length
+    key.length
+  end
+
+  def key_shifts
+    @key_shifts ||= to_a(key).map {|letter| position(letter) - 1 }
+  end
+end
+
+RSpec.describe Vigenere do
+  let(:text) { 'eeeeee' }
+  let(:encrypted_text) { 'tmbips' }
+  let(:key) { 'pixelo' }
+  let(:encipherer)  { Vigenere.new(text, key) }
+  let(:deciphered_huck) { File.read 'funs/encryption/texts/huckleberry_finn.txt' }
+
+  it 'initializes' do
+    expect(encipherer).to be_a(Vigenere)
+  end
+
+  it 'has a keyword' do
+    expect(encipherer.key).to eq(key)
+  end
+
+  it 'encrypts with a keyword' do
+    expect(encipherer.encipher).to eq encrypted_text
+  end
+
+  it 'decrypts with a keyword' do
+    encipherer = Vigenere.new(encrypted_text, key)
+    expect(encipherer.decipher).to eq text
+  end
+
+  context 'long text' do
+    let(:text) { deciphered_huck }
+
+    it 'encrypts huck' do
+      pp encipherer.encipher
+    end
+
+    it 'round-trips huck' do
+      pp Vigenere.new(encipherer.encipher, key).decipher
+    end
+
+  end
+end
+
+RSpec.describe Caesar do
+  let(:encipherer) { Caesar.new(subject_text) }
+
+  let(:no_wrap_text) { 'abcde' }
+  let(:no_wrap_cipher) { 'bcdef' }
+
+  let(:wrap_text) { 'wxyz' }
+  let(:wrap_cipher) { 'xyza' }
+
+  let(:deciphered_huck) { File.open 'funs/encryption/texts/huckleberry_finn.txt' }
+
+  after do
+    close deciphered_huck rescue nil
+  end
+
+  context 'multiple cipher' do
     let(:subject_text) { no_wrap_text }
 
-    it 'encrypts 999 times' do
-      pp encryptor.multiple_cypher(999)
+    it 'encrypts 9 times' do
+      pp encipherer.multiple_cipher(9)
     end
   end
   context 'large texts' do
-    let(:subject_text) { File.read(decyphered_huck) }
+    let(:subject_text) { File.read(deciphered_huck) }
     it 'encrypts them' do
-      expect{encryptor.encypher}.not_to raise_error
+      expect{encipherer.encipher}.not_to raise_error
     end
 
     it 'encrypts twain' do
-      pp encryptor.encypher
+      pp encipherer.encipher
     end
 
     it 'round-trips them' do
-      cypher_huck = Tempfile.new('cypher_huck') << encryptor.encypher
-      round_trip_huck = Tempfile.new('decypher_huck') << Caesar.new(File.read(cypher_huck)).decypher
+      cipher_huck = Tempfile.new('cipher_huck') << encipherer.encipher
+      round_trip_huck = Tempfile.new('decipher_huck') << Caesar.new(File.read(cipher_huck)).decipher
       round_trip_huck.rewind
       while true do
-        decyphered_huck.each_line do |decyphered_line|
+        deciphered_huck.each_line do |deciphered_line|
           rt_line = round_trip_huck.readline
-          expect(rt_line).to eq(decyphered_line.downcase)
+          expect(rt_line).to eq(deciphered_line.downcase)
         end
         break
       end
@@ -183,68 +283,67 @@ RSpec.describe Caesar do
     let(:subject_text) { no_wrap_text }
     context 'by default value' do
       it 'shifts' do
-        expect(encryptor.shift('a', 1)).to eq('b')
+        expect(encipherer.shift('a', 1)).to eq('b')
       end
 
       it 'to left' do
-        expect(encryptor.shift('b', -1)).to eq('a')
+        expect(encipherer.shift('b', -1)).to eq('a')
       end
 
       it 'to left and rotate' do
-        expect(encryptor.shift('a', -1)).to eq('z')
+        expect(encipherer.shift('a', -1)).to eq('z')
       end
 
       it 'rotates z to a' do
-        expect(encryptor.shift('z', 1)).to eq('a')
+        expect(encipherer.shift('z', 1)).to eq('a')
       end
 
       context 'shift by 3' do
         let(:shift_by) { 3 }
         it 'rotates z to c' do
-          expect(encryptor.shift('z', shift_by)).to eq('c')
+          expect(encipherer.shift('z', shift_by)).to eq('c')
         end
 
         it 'rotates a to d' do
-          expect(encryptor.shift('a', shift_by)).to eq('d')
+          expect(encipherer.shift('a', shift_by)).to eq('d')
         end
       end
 
       context 'shift by 5 * 26 + 3 ' do
         let(:shift_by) { 5 * 26 + 3 }
         it 'rotates z to c' do
-          expect(encryptor.shift('z', shift_by)).to eq('c')
+          expect(encipherer.shift('z', shift_by)).to eq('c')
         end
 
         it 'rotates a to d' do
-          expect(encryptor.shift('a', shift_by)).to eq('d')
+          expect(encipherer.shift('a', shift_by)).to eq('d')
         end
       end
     end
   end
 
 
-  context 'decyphering' do
-    let(:subject_text) { no_wrap_cypher }
+  context 'deciphering' do
+    let(:subject_text) { no_wrap_cipher }
 
-    it 'decyphers a text' do
-      expect(encryptor.decypher).to eq(no_wrap_text)
+    it 'deciphers a text' do
+      expect(encipherer.decipher).to eq(no_wrap_text)
     end
   end
 
-
-  context 'encyphering' do
+  context 'enciphering' do
     context 'texts that wrap' do
       let(:subject_text) { wrap_text }
-      it 'encyphers a wrap text' do
-        expect(encryptor.encypher).to eq(wrap_cypher)
+      it 'enciphers a wrap text' do
+        expect(encipherer.encipher).to eq(wrap_cipher)
       end
     end
 
     context 'texts that do not wrap' do
       let(:subject_text) { no_wrap_text }
 
-      it 'encyphers a text' do
-        expect(encryptor.encypher).to eq(no_wrap_cypher)
+      it 'enciphers a text' do
+        expect(encipherer.encipher).to eq(no_wrap_cipher)
       end
     end
   end
