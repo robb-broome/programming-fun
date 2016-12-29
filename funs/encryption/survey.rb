@@ -17,6 +17,10 @@ class Encryptor
     @text=text.downcase
   end
 
+  def clean_text
+    @clean_text ||= text_a.select{|letter| letter.between?(ALPHABET[0], ALPHABET[-1])}.join
+  end
+
   def shift_text(shift_by)
     text.split('').map {|letter| shift(letter, shift_by) }.join
   end
@@ -58,6 +62,7 @@ end
 
 class Freq < Encryptor
   # frequency analysis on text
+  MIN_REPEAT = 30
 
   attr_reader :text, :frequency, :count
 
@@ -70,6 +75,28 @@ class Freq < Encryptor
 
   def letter_freq letter
     frequency[letter]
+  end
+
+  def repeats(size)
+    repeats = Hash.new {|h, k| h[k] = 0 }
+
+    clean_text.each_char.with_index do |letter, index|
+      segment = clean_text[index, size]
+      repeats[segment] += 1
+    end
+    val = repeats.delete_if{|k, v| v < MIN_REPEAT }.sort{|a, b| a[1] <=> b[1]}
+    Hash[val]
+  end
+
+  def repeat_offsets(size)
+    repeat_freq = Hash.new {|h, k| h[k] = [] }
+    repeats = repeats(size).keys.reverse[-5..-1]
+    clean_text.each_char.with_index do |letter, index|
+      segment = clean_text[index, size]
+      next unless repeats.include?(segment)
+      repeat_freq[segment] << index
+    end
+    repeat_freq
   end
 
   def letter_count letter
@@ -86,14 +113,14 @@ class Freq < Encryptor
     result.sort {|a, b| a[1][:frequency] <=> b[1][:frequency] }.reverse
   end
 
-  def doubles
-    doubles = Hash.new {|h, k| h[k] = 0 }
+  def double_letters
+    double_letters = Hash.new {|h, k| h[k] = 0 }
     last = nil
     text_a.each do |letter|
-      doubles[ letter * 2 ] += 1 if letter == last
+      double_letters[ letter * 2 ] += 1 if letter == last
       last = letter
     end
-    doubles.sort{|a, b| a[1] <=> b[1]}.reverse
+    double_letters.sort{|a, b| a[1] <=> b[1]}.reverse
   end
 
   def digest
@@ -103,30 +130,45 @@ class Freq < Encryptor
     end
   end
 
-  def text_a
-    @text_a ||= to_a(text)
-  end
-
 end
 
 RSpec.describe Freq do
   let(:deciphered_huck) { File.read 'funs/encryption/texts/huckleberry_finn.txt' }
-  it 'gives the freqency' do
-    text = 'aabcd'
-    freq = Freq.new(text)
+  let(:text) { 'aabcd' }
+  let(:freq) { Freq.new(text) }
+
+  it 'gives the freqency of a letter in the text' do
     expect(freq.letter_count('a')).to eq(2)
   end
 
-  it 'does twain' do
-    pp Freq.new(deciphered_huck).count
+  context 'a long text' do
+    let(:text) { deciphered_huck }
+    it 'lists counts' do
+      pp freq.count
+    end
+
+    it 'lists count and frequency ' do
+      pp freq.result
+    end
+
+    it'lists double_letters' do
+      pp freq.double_letters
+    end
+
+    it 'lists repeat frequency' do
+      pp freq.repeats(6)
+    end
+
+    it 'lists repeat offsets' do
+      pp freq.repeat_offsets(15)
+    end
   end
 
-  it'results' do
-    pp Freq.new(deciphered_huck).result
-  end
-
-  it'doubles' do
-    pp Freq.new(deciphered_huck).doubles
+  context 'repeat frequency' do
+    let(:text) { 'abcdefdefcde' }
+    it 'finds repeats' do
+      expect(freq.repeats(3)).to eq({'cde' => 2, 'def' => 2 })
+    end
   end
 end
 
@@ -159,28 +201,20 @@ class Vigenere < Caesar
 
   def encipher
     key_position = 0
-    text_a.map do |letter|
-      if letter.sum.between?(A,Z)
-        shift_value = key_shifts[key_position]
-        key_position = (key_position + 1) % key_length
-        shift(letter, shift_value)
-      else
-        letter
-      end
+    clean_text.each_char.map do |letter|
+      shift_value = key_shifts[key_position]
+      key_position = (key_position + 1) % key_length
+      shift(letter, shift_value)
     end.join
   end
 
   def decipher
     key_position = 0
-    text_a.map do |letter|
-      if letter.sum.between?(A,Z)
-        shift_value = key_shifts[key_position]
-        key_position = (key_position + 1) % key_length
-        key_row_letter_position = (position(letter) - 1) - shift_value
-        ALPHABET[key_row_letter_position]
-      else
-        letter
-      end
+    clean_text.each_char.map do |letter|
+      shift_value = key_shifts[key_position]
+      key_position = (key_position + 1) % key_length
+      key_row_letter_position = (position(letter) - 1) - shift_value
+      ALPHABET[key_row_letter_position]
     end.join
   end
 
