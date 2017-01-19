@@ -62,7 +62,7 @@ end
 
 class Freq < Encryptor
   # frequency analysis on text
-  MIN_REPEAT = 30
+  MIN_REPEAT = 30 # good for long texts
 
   attr_reader :text, :frequency, :count
 
@@ -77,26 +77,49 @@ class Freq < Encryptor
     frequency[letter]
   end
 
-  def repeats(size)
+  def repeats(size, min_repeat=MIN_REPEAT)
     repeats = Hash.new {|h, k| h[k] = 0 }
 
     clean_text.each_char.with_index do |letter, index|
       segment = clean_text[index, size]
       repeats[segment] += 1
     end
-    val = repeats.delete_if{|k, v| v < MIN_REPEAT }.sort{|a, b| a[1] <=> b[1]}
+    repeats.delete_if{|k, v| v < min_repeat}
+    val = repeats.sort{|a, b| a[1] <=> b[1]}
     Hash[val]
   end
 
-  def repeat_offsets(size)
+  def repeat_offsets(size, min_repeat = MIN_REPEAT)
     repeat_freq = Hash.new {|h, k| h[k] = [] }
-    repeats = repeats(size).keys.reverse[-5..-1]
+    repeats = repeats(size, min_repeat).keys.reverse.last(5)
     clean_text.each_char.with_index do |letter, index|
       segment = clean_text[index, size]
       next unless repeats.include?(segment)
       repeat_freq[segment] << index
     end
     repeat_freq
+  end
+
+  def repeat_interval(size, min_repeat = MIN_REPEAT)
+    # distance between repeats. LCD of these may be key length
+    intervals = Hash.new {|h, k| h[k] = [] }
+
+    repeat_offsets(size, min_repeat).each do |repeated_chars, offsets|
+      last_offset = offsets.shift
+      offsets.each do |offset|
+        intervals[repeated_chars] << offset - last_offset
+        last_offset = offset
+      end
+    end
+    intervals
+  end
+
+  def histo(value_sets)
+    histo = Hash.new(0)
+    value_sets.flatten.each do |value|
+      histo[value] += 1
+    end
+    histo
   end
 
   def letter_count letter
@@ -161,6 +184,35 @@ RSpec.describe Freq do
 
     it 'lists repeat offsets' do
       pp freq.repeat_offsets(15)
+    end
+  end
+
+  describe 'repeat intervals' do
+
+    context 'short text' do
+      let(:text) { 'qxxxabcdexxxfghijklmnoxxxp' }
+      it 'detects  interval between repeats' do
+        expect(freq.repeat_interval(3,2)).to eq({'xxx' => [8,13]})
+      end
+    end
+
+    context 'long text' do
+      let(:ten_place_key) { 'abcdefghijk' }
+      let(:text) { Vigenere.new(deciphered_huck, ten_place_key).encipher }
+      let(:min_repeats) { 15 }
+      let(:word_length) { 8 }
+      # let(:text) { 'a sentence with repeated sentence repeated yy  repeated xx sentence' }
+      it 'detects  interval between repeats' do
+        pp freq.repeats(word_length,min_repeats)
+        intervals = freq.repeat_interval(word_length, min_repeats)
+        pp intervals
+        pp histo = freq.histo( intervals.values )
+        bigggest_occurance_value = histo.values.uniq.sort.last
+        highest =  histo.select{ |key, value| value == bigggest_occurance_value}
+        puts 'highest: ', highest.keys.sort
+
+          
+      end
     end
   end
 
@@ -232,7 +284,7 @@ end
 RSpec.describe Vigenere do
   let(:text) { 'eeeeee' }
   let(:encrypted_text) { 'tmbips' }
-  let(:key) { 'pixelo' }
+  let(:key) { 'pixeloshazzam' }
   let(:encipherer)  { Vigenere.new(text, key) }
   let(:deciphered_huck) { File.read 'funs/encryption/texts/huckleberry_finn.txt' }
 
