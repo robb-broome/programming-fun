@@ -12,3 +12,4 @@ tags
 :w
 .env
 *.log
+*.swp
