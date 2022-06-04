@@ -5,24 +5,30 @@ require 'pry'
 # in a tested and repeatable way.
 
 class Player
-  attr_reader :name, :hand
+  attr_reader :name
 
-  def initialize(name, hand)
+  def initialize(name)
     @name = name
-    @hand = hand || []
+    @hand = []
   end
 
   def draw
-    [ self, hand.pop ]
+    hand.pop
   end
 
   def take(card)
+    # i own this card now
+    card.owner = self
     hand.unshift(card)
   end
 
   def card_count
     hand.count
   end
+
+  private
+
+  attr_accessor :hand
 end
 
 class Round
@@ -34,100 +40,142 @@ class Round
   # a 'Round' may be one draw, or more than one if there is a tie between
   # some of the players.
 
-  attr_accessor :players, :played_cards
+  attr_accessor :players, :played_cards, :round_winners
 
   def initialize(players)
     @played_cards = []
     @players = players
+    @round_winners = []
   end
 
   def play
     while players.count > 1
       # get a card from each player, add it to played cards
       # players who can't draw are removed
-      draw_result = players.map(&:draw).delete_if {|item| item[1].nil?}
-      drawn_cards = draw_result.map {|item| item[1]}
-      # put all the played cards into the pot
-      played_cards.concat drawn_cards
+      draw_result = players.map(&:draw).compact
 
-      # rare edge case: draw result will be nil if everybody somehow runs out of cards at the
-      # same time. in that case, don't change played cards or winners
+      # rare edge case.
+      # The draw result will be nil if everybody somehow
+      #   runs out of cards at the same time.
+      # In that case, don't change played cards or winners
+      #   or award any cards
       break if draw_result.all? nil?
 
+      # put all the played cards into the pot
+      played_cards.concat draw_result
+
       # reduce players to those who drew the high card for the draw
-      high_card = drawn_cards.max
-      self.players = draw_result.select {|item| item[1] == high_card}.map {|item| item[0]}
+      high_card = draw_result.map(&:value).max
+      high_cards_drawn = draw_result.select {|card| card.value == high_card}
+      high_card_players = high_cards_drawn.map(&:owner)
+      self.players = high_card_players
     end
+    # Normally, just one
+    self.round_winners = players
   end
 end
 
 class Game
-  attr_accessor :players
+  attr_accessor :players, :winner
 
   def initialize(players)
     @players = players
+    @winner = nil
   end
 
   def play
     while players.count > 1
       round = Round.new(players)
       round.play
-      winners = round.players
+      round_winners = round.round_winners
 
-      if winners.count == 1
+      if round_winners.count == 1
+        round_winner = round_winners.first
         # there is a clear winner, so award the cards
-        winner = winners.first
-        # award the winner all the played cards
-        round.played_cards.each {|card| winner.take(card)}
+        round.played_cards.each {|card| round_winner.take(card)}
+
+        # continue with players who have still got cards
+        # NOTE: this COULD be just players who gave up a card in the last draw``
+        self.players = players.select {|player| player.card_count > 0}
+      else
+        # ambiguous outcome, game ends
+        self.players = []
       end
-
-      self.players = players.select {|player| player.card_count > 0}
-
-      # this happens if all active players had
-      # precisely the same hand, in the same order
-      # .. then, everyone has drawn all their cards
-      # and all the cards are in the pot. Nobody will get these.
-      # in this case, nobody can win and it's over
-      break if players.count == 0
-
     end
-    players
+    self.winner = players.first
+  end
+end
+
+class Card
+
+  attr_accessor :owner
+  attr_reader :value
+
+  def initialize(owner, value)
+    @owner = owner
+    @value = value
   end
 end
 
 RSpec.describe 'war' do
-  let(:sarah) { Player.new(:sarah, sarahs_hand) }
+  let(:sarah) { Player.new(:sarah) }
+  let(:robb) { Player.new(:robb) }
+  let(:joe) { Player.new(:joe) }
+
   let(:sarahs_hand) { [] }
-  let(:robb) { Player.new(:robb, robbs_hand) }
   let(:robbs_hand) { [] }
-  let(:joe) { Player.new(:joe, joes_hand) }
   let(:joes_hand) { [] }
 
   let(:players) { [sarah, robb, joe] }
 
+  before do
+    # set up initial hands
+    sarahs_hand.each {|value| sarah.take( Card.new(nil, value)) }
+    robbs_hand.each {|value| robb.take( Card.new(nil, value)) }
+    joes_hand.each {|value| joe.take( Card.new(nil, value)) }
+  end
+
+  describe Card do
+    it 'has a value' do
+    end
+    it 'has an owner' do
+    end
+  end
   describe Player do
-    describe 'drawting cards' do
+    describe 'drawing cards' do
       let(:sarahs_hand) { [9, 10, 11] }
+
+      it 'yields cards' do
+        expect(sarah.draw).to be_a(Card)
+      end
+
       it 'draws from the top of the players hand' do
-        expect(sarah.draw).to eq( [ sarah, 11 ] )
-        expect(sarah.draw).to eq( [ sarah, 10 ] )
-        expect(sarah.draw).to eq( [ sarah, 9 ] )
+        expect(sarah.draw.value).to eq(  9 )
+        expect(sarah.draw.value).to eq( 10 )
+        expect(sarah.draw.value).to eq( 11 )
       end
     end
 
     describe 'accepting cards' do
-      let(:sarahs_hand) { [9] }
+      let(:sarahs_hand) { [] }
+
+      it 'assigns the card owner' do
+        sarah.take(Card.new(Player.new(:noone), 11))
+        expect(sarah.draw.owner).to eq( sarah )
+      end
+
       it 'puts the accepted card on the bottom of the players hand' do
-        sarah.take(11)
-        expect(sarah.draw).to eq( [sarah, 9] )
-        expect(sarah.draw).to eq( [sarah, 11] )
+        sarah.take(Card.new(sarah, 11))
+        sarah.take(Card.new(sarah, 9))
+        expect(sarah.draw.value).to eq( 11 )
+        expect(sarah.draw.value).to eq( 9 )
       end
     end
 
     describe 'when a player does not have cards' do
       let(:sarahs_hand) { [] }
       specify 'they just draw nil' do
-        expect(sarah.draw).to eq( [sarah, nil] )
+        expect(sarah.draw).to be_nil
       end
     end
 
@@ -158,7 +206,7 @@ RSpec.describe 'war' do
       end
 
       it 'returns the set of cards that were played' do
-        expect(round.played_cards).to match_array( [9, 10] )
+        expect(round.played_cards.map(&:value)).to match_array( [9, 10] )
       end
     end
 
@@ -200,7 +248,7 @@ RSpec.describe 'war' do
       end
 
       it 'returns the set of cards that were played' do
-        expect(round.played_cards).to match_array( [9, 9] )
+        expect(round.played_cards.map(&:value)).to match_array( [9, 9] )
       end
     end
 
@@ -214,28 +262,30 @@ RSpec.describe 'war' do
       end
 
       it 'returns the set of cards that were played' do
-        expect(round.played_cards).to match_array( [] )
+        expect(round.played_cards).to eq( [] )
       end
     end
   end
 
   describe Game do
+    before { game.play }
     context 'when nobody has cards' do
       let(:sarahs_hand) { [] }
       let(:robbs_hand)  { [] }
       let(:joes_hand)   { [] }
       let(:game) { Game.new(players) }
       it 'does not blow sky high' do
-        expect(game.play).to eq( [] )
+        expect(game.winner).to be_nil
       end
     end
+
     context 'when there are no tie hands' do
       let(:sarahs_hand) { [4,5,8,9] }
       let(:robbs_hand)  { [3,4,7,8] }
       let(:joes_hand)   { [2,3,6,7] }
       let(:game) { Game.new(players) }
       it 'finds the correct winner' do
-        expect(game.play).to eq( [sarah] )
+        expect(game.winner).to eq( sarah )
       end
     end
 
@@ -245,7 +295,7 @@ RSpec.describe 'war' do
       let(:joes_hand)   { [] }
       let(:game) { Game.new(players) }
       specify 'nobody wins' do
-        expect(game.play).to eq( [] )
+        expect(game.winner).to eq( nil )
       end
     end
     context 'when there is a tie during the game' do
@@ -254,7 +304,7 @@ RSpec.describe 'war' do
       let(:joes_hand)   { [] }
       let(:game) { Game.new(players) }
       it 'plays the tied players again to determine a round winner, then continues' do
-        expect(game.play).to eq([sarah])
+        expect(game.winner).to eq(sarah)
       end
     end
   end
