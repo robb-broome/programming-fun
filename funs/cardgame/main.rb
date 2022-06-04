@@ -3,6 +3,11 @@ require 'pry'
 
 # This is a simple card game called War. The goal is to implement basic gameplay
 # in a tested and repeatable way.
+def write(message)
+  if false
+    puts message
+  end
+end
 
 class Player
   attr_reader :name
@@ -61,6 +66,7 @@ class Round
       #   or award any cards
       break if draw_result.all? nil?
 
+      write "Cards drawn: #{draw_result.map(&:value).join(', ')}"
       # put all the played cards into the pot
       played_cards.concat draw_result
 
@@ -71,6 +77,7 @@ class Round
       self.players = high_card_players
     end
     # Normally, just one
+    write "#{players.map(&:name).join(', ')} is the winner of this round"
     self.round_winners = players
   end
 end
@@ -92,17 +99,29 @@ class Game
       if round_winners.count == 1
         round_winner = round_winners.first
         # there is a clear winner, so award the cards
+        write "#{round_winner.name} gets awarded #{round.played_cards.map(&:value).join(', ')}"
         round.played_cards.each {|card| round_winner.take(card)}
 
         # continue with players who have still got cards
         # NOTE: this COULD be just players who gave up a card in the last draw``
+        rejected_players = players.select {|player| player.card_count == 0}.map(&:name)
+        if rejected_players.count > 0
+          write "---------------------------"
+          write "#{rejected_players.join(', ')} IS OUT!"
+          write "---------------------------"
+          sleep(1)
+        end
         self.players = players.select {|player| player.card_count > 0}
       else
         # ambiguous outcome, game ends
+        write "Ambiguous game result. Nobody wins the game"
         self.players = []
       end
     end
     self.winner = players.first
+    if !winner.nil?
+      write "#{winner.name} wins the game and has #{winner.card_count} cards"
+    end
   end
 end
 
@@ -137,10 +156,14 @@ RSpec.describe 'war' do
 
   describe Card do
     it 'has a value' do
+      expect(Card.new(joe, 1).value).to eq 1
     end
+
     it 'has an owner' do
+      expect(Card.new(joe, 1).owner).to eq joe
     end
   end
+
   describe Player do
     describe 'drawing cards' do
       let(:sarahs_hand) { [9, 10, 11] }
@@ -191,7 +214,6 @@ RSpec.describe 'war' do
         expect(joe.card_count).to eq(0)
       end
     end
-
   end
 
   describe Round do
@@ -298,15 +320,46 @@ RSpec.describe 'war' do
         expect(game.winner).to eq( nil )
       end
     end
+
     context 'when there is a tie during the game' do
-      let(:sarahs_hand) { [7,5,8,9] }
-      let(:robbs_hand)  { [6,5,8,9] }
+      let(:sarahs_hand) { [9, 8, 5, 7] }
+      let(:robbs_hand)  { [9, 8, 5, 6] }
       let(:joes_hand)   { [] }
       let(:game) { Game.new(players) }
       it 'plays the tied players again to determine a round winner, then continues' do
         expect(game.winner).to eq(sarah)
       end
     end
+
+    context 'with a stacked deck' do
+      let(:sarahs_hand) { Array.new(100000) { rand(15..21) } }
+      let(:robbs_hand)  { Array.new(100000) { rand(8..14) } }
+      let(:joes_hand)   { Array.new(100000) { rand(1..7) } }
+      let(:game) { Game.new(players) }
+      it 'the one with the high cards always wins' do
+        expect(game.winner).to eq(sarah)
+      end
+    end
+
+    context 'with a whole lot of random cards' do
+      let(:sarahs_hand) { Array.new(17) { rand(1..14) } }
+      let(:robbs_hand)  { Array.new(17) { rand(1..14) } }
+      let(:joes_hand)   { Array.new(17) { rand(1..14) } }
+      let(:game) { Game.new(players) }
+      it 'plays the tied players again to determine a round winner, then continues' do
+        expect(game.winner).to be_a(Player)
+      end
+    end
+
+    context 'with a whole lot of random cards, but all in the same order!' do
+      let(:same_hand)  { Array.new(10_000) { rand(1..14) } }
+      let(:sarahs_hand) { same_hand }
+      let(:robbs_hand)  { same_hand }
+      let(:joes_hand)   { same_hand }
+      let(:game) { Game.new(players) }
+      it 'ends in an ambiguous state' do
+        expect(game.winner).to be_nil
+      end
+    end
   end
 end
-
