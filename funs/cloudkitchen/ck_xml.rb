@@ -1,4 +1,3 @@
-require 'rspec/autorun'
 require 'pry'
 =begin
 <a>
@@ -53,7 +52,7 @@ class Node
     #raise ContentNotAllowed unless content.nil?
     children << child
   end
-  
+
   def content=(string)
     #raise ContentNotAllowed unless children == []
     content = string
@@ -78,32 +77,32 @@ class Tokenizer
       {type: 'CLOSE', value: 'a'},
       ]
   end
-  
+
   def nextToken
     value = @tokenized_xml[@pointer]
     @pointer += 1
     value
   end
-  
+
 end
 
 def buildXML(tokenizer, node = nil)
   token = tokenizer.nextToken
   return node if token.nil?
-  
+
   type = token[:type]
   if type == 'CLOSE'
     buildXML(tokenizer, node)
     return node
   end
   new_node = Node.new
-  
+
   case type
   when 'BEGIN'
     new_node.key_value = token[:value]
     node << new_node unless node.nil?
     buildXML(tokenizer, new_node)
-    
+
   when 'TEXT'
     new_node.content = token[:value]
     node << new_node unless node.nil?
