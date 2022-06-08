@@ -1,4 +1,3 @@
-require 'rspec'
 require 'pry'
 def sockMerchant(n, ar)
   result = Hash.new {|h,k| h[k] = 0}
