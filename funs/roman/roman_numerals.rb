@@ -1,6 +1,10 @@
 require 'pry'
 
 class RomanNumerals
+  def a_to_r(integer)
+    translation.key(integer)
+  end
+
   def r_to_a(roman_numeral)
     parts = roman_numeral.split('')
     values = parts.map {|part| value_for(part)}
@@ -53,6 +57,12 @@ RSpec.describe RomanNumerals do
     expect(converter).to be_a(RomanNumerals)
   end
 
+  describe 'convert arabic to roman numerals' do
+    it 'works' do
+      expect(converter.a_to_r(1)).to eq('I')
+    end
+  end
+
   describe 'convert roman numerals to arabic' do
     it 'works' do
       expect(converter.r_to_a('XX')).to eq(20)
@@ -85,6 +95,5 @@ RSpec.describe RomanNumerals do
     it 'handles subtractions with following additions' do
       expect(converter.r_to_a('MCMXXXIX')).to eq(1939)
     end
-
   end
 end
