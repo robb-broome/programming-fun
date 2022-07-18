@@ -5,7 +5,6 @@
 # - ... my solution would not have worked because of dividing integers
 # - tests added too much time to the 40 minutes allowed.
 
-require 'pry'
 class Warehouse
   def allocate(data, requested_warehouse)
     # remember, in here we are zero-indexed

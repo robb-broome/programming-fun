@@ -1,4 +1,4 @@
-require 'rspec'
+require 'spec_helper'
 require 'pry'
 class Q
   attr_accessor :els

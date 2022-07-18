@@ -47,10 +47,10 @@ class REMatch
       # find the earliest inclusion of any of the expressions
       # in the string.
       # use the expression that was found first
-      first_expression = first_instance(pattern[pointer, -1], expressions]
+      pointer = pattern.index(expression, pointer) || string_length
+      first_expression = first_instance(pattern[pointer, -1], expressions)
 
       expression_length = expression.length
-      pointer = pattern.index(expression, pointer) || string_length
       if pointer == string_length
         chunks << pattern[follower, pointer]
         break
