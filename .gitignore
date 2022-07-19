@@ -13,3 +13,6 @@ tags
 .env
 *.log
 *.swp
+
+# pycache files
+*.pyc
