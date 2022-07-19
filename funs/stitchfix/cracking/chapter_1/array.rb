@@ -1,4 +1,4 @@
-require_relative '../common'
+require_relative '../../common'
 
 def ar n
   array = []
